@@ -61,3 +61,52 @@ We want to see how you handle:
 - Messy (ie real) data
 - Understanding data transformation
 This is not a pass or fail test, we want to hear about your challenges and your successes with this particular problem.
+
+# "Solution"
+
+The Average session time for a 15 minute window is 193501 ms (Stored in a text file).
+
+The unique hits per session is stored in Parquet format.
+
+The longest sessions are stored in a text file, according to the argument passed in the cli command.
+
+## Testing
+
+Just run:
+
+```shell script
+sbt test
+```
+
+## How to run
+
+First, decompress the data under the data directory:
+
+```shell script
+gzip -d -k data/2015_07_22_mktplace_shop_web_log_sample.log.gz
+```
+Then, create the Jar file with sbt:
+
+```shell script
+sbt assembly
+```
+
+Then, make sure a version of Spark 2.4 compatible with Scala 2.11 is in the Path.
+And run the following command:
+
+```shell script
+spark-submit \
+  --master local \
+  --conf spark.sql.shuffle.partitions=20 \ # This is optional, but running locally a smaller number of partitions will cause less overhead. Default is 200
+  --class com.paypay.challenge.Analytics \
+  ../PayPayChallenge/target/scala-2.11/PayPayChallenge-assembly-1.0.jar \
+  --source data/2015_07_22_mktplace_shop_web_log_sample.log \ # Required option. Although this is the default.
+  --window 900000 \ # Default 900000ms to sessionize
+  --sessions 15 \ # Number of longest sessions
+  --output output # Folder to store the results of the process
+```
+
+# Considerations
+
+Although this hasn't been investigated, probably a better approach to identify unique users is by using IP addresses plus User Agents.
+
